@@ -143,3 +143,70 @@ export const handleLogin = asyncHandler(async (req, res) => {
 
 })
 
+//handleRefresh helps in generating the new access and refresh tokens
+export const handleRefresh = asyncHandler(async (req, res) => {
+
+    const user = req.user;
+
+    //generate new tokens
+    const newAccessToken = generateAccessToken(user);
+    const newRefreshToken = generateRefreshToken(user);
+
+    //hash the newRefreshToken to store it in the DB
+    const hashedRefreshToken = crypto
+        .createHash("sha256")
+        .update(newRefreshToken)
+        .digest("hex");
+
+    user.refreshToken = hashedRefreshToken;
+    await user.save({ validateBeforeSave: false });
+
+    return res.cookie("refreshToken", newRefreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000
+    })
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                { accessToken: newAccessToken },
+                "Access Token refreshed"
+            )
+        )
+})
+
+//handle Logut by clearing the refreshToken
+//-> this works when attcker stole refresh token, user clicks logut , refresh token is cleared
+//-> when token expired, User clicks logout, cookie cleared anyway
+//-> when DB compromised, Hashed tokens still safe.
+export const handleLogout = asyncHandler(async (req, res) => {
+
+    //read refresh token from the cookies
+    const token = req.cookies?.refreshToken;
+
+    if (token) {
+        //hash the refresh token
+        const hashedRefreshToken = crypto
+            .createHash("sha256")
+            .update(token)
+            .digest("hex");
+
+        //find user with matching hash
+        await User.findOneAndUpdate(
+            { refreshToken: hashedRefreshToken },
+            { $set: { refreshToken: null } }
+        );
+    }
+
+    return res
+        .status(200)
+        .clearCookie("refreshToken", {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict"
+        })
+        .json(new ApiResponse(200, {}, "Logged Out Successfully"));
+})
+
