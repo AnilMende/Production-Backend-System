@@ -16,3 +16,25 @@ The server can read and modify the cookies via http headers, but the client scri
 server expects a real refresh token not hashed refresh token. So attacker with only the hash cannot use it which cannot generate real token.
 
 -> handleRegister , handleLogin are the controllers for the register and login.
+
+-> Refresh Token Endpoint : 
+Read refresh token from cookie,
+Hash the refresh token,
+compare the Hashed refresh token with the refresh token in Database,
+Verify JWT,
+Generate new Access and Refresh Tokens,
+Replace Old Refresh Token.
+-> verifyRefreshToken is the middleware to verify the jwt token , if jwt.verify happens first, if attacker steals refresh token it will pass jwt.verify() until it expires
+-> JWT only proves token was signed with the secret key, DB proves token is still valid session
+-> handleRefresh is the controller to generate new Access and Refresh Tokens.
+
+->Logut Endpoint: 
+read refresh token from cookie,
+Hash the refresh token,
+Find user with matching hash,
+if found clear the refresh token from database,
+otherwise clear cookie any way using clearCookie("refreshToken'),
+Logut always succeds even if token is expired or tampered.
+
+-> Frontend may call logout when token already expired, cookie corrupted, user manually logout.
+
