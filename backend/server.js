@@ -4,6 +4,8 @@ import cors from 'cors';
 
 import cookieParser from 'cookie-parser';
 import connectDB from './lib/db.js';
+
+import authRouter from './routes/authRoutes.js';
 import userRouter from './routes/userRoutes.js';
 
 const PORT = process.env.PORT || 4000;
@@ -21,8 +23,10 @@ app.get("/", (req,res) => {
     res.send("Server is Live");
 })
 
+//auth api end point
+app.use("/api/auth", authRouter);
 //user api end point
-app.use("/api/auth", userRouter);
+app.use("/api/user", userRouter);
 
 //connect to MongoDB
 await connectDB();
