@@ -38,3 +38,9 @@ Logut always succeds even if token is expired or tampered.
 
 -> Frontend may call logout when token already expired, cookie corrupted, user manually logout.
 
+-> AccessToken middleware is a standard security practice for protecting routes. It intercepts incoming requests, validates the token and allows the request to proceed only if the token is valid.
+-> From the frontend AccessToken is stored in the Authrization header that is Authorization : Bearer <AccessToken>, client includes the AccessToken in the header of subsequent API requests.
+-> Used wth REST APis, to access resources such as userData, documents and services, for verification of the accessToken get the token from Authorization header, and split the Bearer and AccessToken by using space between them, and verify this token using the jwt, and store the user in the request to use in other controllers.
+->The user controller functions are getUserProfile(get), updateUser(PUT), deleteUser(delete). The user can be passed from the verifyAccessToken middleware.
+Use findByIdAndDelete to remove the document, which requires only one round trip to database, Every time you use await your server hash to wait for a response from the database.
+
