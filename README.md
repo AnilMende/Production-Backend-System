@@ -44,3 +44,14 @@ Logut always succeds even if token is expired or tampered.
 ->The user controller functions are getUserProfile(get), updateUser(PUT), deleteUser(delete). The user can be passed from the verifyAccessToken middleware.
 Use findByIdAndDelete to remove the document, which requires only one round trip to database, Every time you use await your server hash to wait for a response from the database.
 
+=> Rate Limiting : is the process of limiting the number of requests client can make in a given period of time. At first I have implemented a Custom limiter which is Fixed window rate limitng algorithm. It involves various steps, a store is initialized which is an object helps to store the ip address with the count and resetTime.
+
+-> If the ip address is not in the loginAttempts then add the ip adderess and with count 1 and resetTime is Date.now() + windowMs, windowMs means how long to remember a request in milliseconds, if the ip address already available in the loginAttempts then increment the count by 1.
+
+-> if the count of the ip address in the loginAttempts is greater than the limit or maxAttempts which is the max number of requests a client can make in the windowMs i.e.. in a session.
+
+-> This results in the error Too many requests with 429 status code. The middleware stops the request and it does not call next. we can apply this middleware that is rateLimiter to the routes like login.
+
+-> And this custome rate limiter also has problems because, it is memory based storage, loginAttempts lives in the memory, if server restarts limiter resets, if there are multiple servers limiter useless. Attackers can bypass limit by restarting connection, hitting different server instances. This is IP based only so weak protection because Many users share same IP address like colleges or hostels. With Proxies and VPN's easily bypassed. No deleting of old IP addresses, server memory increases and slows down. If the multiple requests hit simulataneously incrementing the count may not be accurate.
+
+=> We can minimize the above problems by using express-rate-limit, helps to think of it as a gatekeeper sitting in the middle of your request pipeline. It doesn't just look at the total traffic; it tracks individual "buckets" for every user.
