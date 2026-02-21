@@ -14,7 +14,12 @@ const app = express();
 
 //middleware
 app.use(express.json());
-app.use(cors());
+
+//CORS
+app.use(cors({
+    origin : "*",
+    methods : ['GET', 'POST', 'PUT', 'DELETE']
+}));
 
 app.use(cookieParser());
 
