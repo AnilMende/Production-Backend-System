@@ -75,3 +75,9 @@ RateLimit-Limit	      The total limit (5).
 RateLimit-Remaining	  How many tries the user has left in this minute.
 RateLimit-Reset	      The Unix timestamp when the counter resets to zero.
 
+=> Added Validation For login and register user.
+
+->Joi is a data validator library use in Node.js, to ensure data integrity and validate incoming data such as user input, API requests and configuration files.
+The Primary use of Joi in Node.js is to define a clear set of rules (a Schema) that incoming data must follow before it is processed by the application or stored in a database. This helps prevent bad data from causing errors or creating security vulnerabilities.
+-> loginSchema involves the set of rules email and password data passed through req.body must follow and registerSchema contains the set of rules username, email and password must follow. These can schemas can be passed into a validator, it includes a rich set of validators for common data types like strings, numbers, dates, arrays, and more, which can be chained together for complex rules (e.g., Joi.string().min(5).max(255).required().email()).
+-> Upon successful validation, Joi can return the sanitized data, stripping out unknown or unwanted fields based on the schema.
