@@ -2,12 +2,20 @@ import express from 'express';
 import { handleLogin, handleLogout, handleRefresh, handleRegister } from '../controllers/authController.js';
 import { verifyRefreshToken } from '../middleware/auth.middleware.js';
 import { authLimiter } from '../middleware/authLimiter.js';
+import { validate } from '../middleware/validationMiddleware.js';
+import { registerSchema } from '../validations/registerSchema.js';
+import { loginSchema } from '../validations/loginSchema.js';
 
 const authRouter = express.Router();
 
-authRouter.post("/register",  handleRegister);
+authRouter.post("/register",validate(registerSchema), handleRegister);
 //added authLimiter for the login so that it can prevent from brute force attacks.
-authRouter.post("/login", authLimiter, handleLogin);
+//for the belowe route-> RateLimiter + validation + controller :
+// Because : Rate limiter protects your server from abuse
+//Validation protects your app from bad data
+//Example : If attacker sends 1000 invalid requests, You have to block them early, 
+// not waste time validating each request
+authRouter.post("/login", authLimiter, validate(loginSchema), handleLogin);
 
 //middleware validates, controller rotates
 authRouter.post("/refresh-token", verifyRefreshToken, handleRefresh);

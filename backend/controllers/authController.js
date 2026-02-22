@@ -11,6 +11,11 @@ import { asyncHandler } from '../utils/AsyncHandler.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 
+//validation schemas
+import { loginSchema } from '../validations/loginSchema.js';
+import { registerSchema } from '../validations/registerSchema.js';
+import { getSystemErrorMessage } from 'node:util';
+
 //function to create accessToken
 function generateAccessToken(user) {
     return jwt.sign(
@@ -40,24 +45,14 @@ function generateRefreshToken(user) {
 //function to register a user
 export const handleRegister = asyncHandler(async (req, res) => {
 
-    //user details
-    const { email, password, username } = req.body;
+    //req.body gets validated data using the middleware in register route
+    const { username, email, password } = req.body;
 
-    //all these are fields need to be mentioned in the body
-    if (!email || !password || !username) {
-        throw new ApiError(400, "All fields are required");
-    }
-
-    //email format validation
-    if (!validator.isEmail(email)) {
-        throw new ApiError(400, "Invalid email format");
-    }
-
-    //existing user
+    //Check for existing user (using $or to check both at once)
     const exists = await User.findOne({ $or: [{ username }, { email }] });
 
     if (exists) {
-        throw new ApiError(409, "User Already Exists");
+        throw new ApiError(409, "User with this email or username already exists");
     }
 
     //store the password for the security purposes
@@ -91,15 +86,12 @@ export const handleRegister = asyncHandler(async (req, res) => {
 //function to handle user login
 export const handleLogin = asyncHandler(async (req, res) => {
 
+    //using the validated data from the middleware (req.body contains santizied fields)
     const { email, password } = req.body;
 
-    if (!email || !password) {
-        throw new ApiError(400, "Email and password required");
-    }
-
     //to avoid the errors if the user logins with emial which has upperCase letters
-    //we convert the email to the Lowercase
-    const user = await User.findOne({ email: email.toLowerCase() });
+    //no need of email.toLowerCase() because Joi already hadles it
+    const user = await User.findOne({ email });
 
     if (!user) {
         throw new ApiError(401, "Invalid credentials");

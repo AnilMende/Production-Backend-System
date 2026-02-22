@@ -1,8 +1,11 @@
 import express from 'express';
 import 'dotenv/config';
 import cors from 'cors';
-
 import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
+import mongoSanitize from 'express-mongo-sanitize';
+import xss from 'xss-clean';
+
 import connectDB from './lib/db.js';
 
 import authRouter from './routes/authRoutes.js';
@@ -17,9 +20,21 @@ app.use(express.json());
 
 //CORS
 app.use(cors({
-    origin : "*",
-    methods : ['GET', 'POST', 'PUT', 'DELETE']
+    origin : "http://localhost:3000",
+    methods : ['GET', 'POST', 'PUT', 'DELETE'],
+    //Necessary for cookies or authorization headers
+    credentials : true,
+    //Some older browsers and certain SmartTVs do not handle the default 204 No Content response 
+    // for preflight (OPTIONS) requests well. By default optionsScuccessStatus is 204
+    optionsSuccessStatus : 200
 }));
+
+//Using helmet with default settings
+app.use(helmet());
+
+app.use(mongoSanitize());
+
+app.use(xss());
 
 app.use(cookieParser());
 
