@@ -3,8 +3,6 @@ import 'dotenv/config';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
-import mongoSanitize from 'express-mongo-sanitize';
-import xss from 'xss-clean';
 
 import connectDB from './lib/db.js';
 
@@ -31,10 +29,6 @@ app.use(cors({
 
 //Using helmet with default settings
 app.use(helmet());
-
-app.use(mongoSanitize());
-
-app.use(xss());
 
 app.use(cookieParser());
 

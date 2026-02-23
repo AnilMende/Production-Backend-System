@@ -1,7 +1,6 @@
 import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
-import validator from 'validator';
 import crypto from "node:crypto";
 
 dotenv.config();
@@ -10,11 +9,8 @@ import User from '../models/user.js';
 import { asyncHandler } from '../utils/AsyncHandler.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
+import { sendEmail } from '../utils/sendEmail.js';
 
-//validation schemas
-import { loginSchema } from '../validations/loginSchema.js';
-import { registerSchema } from '../validations/registerSchema.js';
-import { getSystemErrorMessage } from 'node:util';
 
 //function to create accessToken
 function generateAccessToken(user) {
@@ -61,13 +57,40 @@ export const handleRegister = asyncHandler(async (req, res) => {
     //hashing the password with the salt
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    //Generate raw token for the email verification purposes
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    //Store this rawToken in DB by hashing it
+    const hashedRawToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+
     //create user
     //here we are storing the hashed version of the password
     const user = await User.create({
         username,
         email: email.toLowerCase(),
-        password: hashedPassword
+        password: hashedPassword,
+        verificationToken: hashedRawToken,
+        verificationTokenExpires: Date.now() + 10 * 60 * 1000
     });
+
+    const verificationUrl = `http://localhost:4000/api/auth/verify-email?token=${rawToken}`;
+    //xwsj gvte cjlk njcl
+    //message to send for email verification
+    const message = `
+    <h1>Verify your email</h1>
+    <p>Please click the link below to verify your account:</p>
+    <a href="${verificationUrl}" target="_blank">Verify Email</a>
+    `;
+
+    //Send email
+    try {
+        await sendEmail({
+            email: user.email,
+            subject: "Email Verification",
+            html: message
+        });
+    } catch (error) {
+        throw new ApiError(500, "Email could not be sent");
+    }
 
     //removing the password and refreshToken from the createdUser
     const createdUser = await User.findById(user._id).select("-password -refreshToken");
@@ -95,6 +118,11 @@ export const handleLogin = asyncHandler(async (req, res) => {
 
     if (!user) {
         throw new ApiError(401, "Invalid credentials");
+    }
+
+    //if the user is not verified then verify the email
+    if (!user.isVerified) {
+        throw new ApiError(403, "Please verify your email before logging in");
     }
 
     //password is compared with the user.password

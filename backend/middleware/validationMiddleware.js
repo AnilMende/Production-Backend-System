@@ -1,4 +1,4 @@
-import { ApiError } from "../utils/ApiError";
+import { ApiError } from "../utils/ApiError.js";
 
 //this validate used inside the routes as a middleware by passing the login or register Schemas
 //req.body will contain the valid user data and access is passed to login or regiser controller
