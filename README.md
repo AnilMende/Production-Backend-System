@@ -81,3 +81,15 @@ RateLimit-Reset	      The Unix timestamp when the counter resets to zero.
 The Primary use of Joi in Node.js is to define a clear set of rules (a Schema) that incoming data must follow before it is processed by the application or stored in a database. This helps prevent bad data from causing errors or creating security vulnerabilities.
 -> loginSchema involves the set of rules email and password data passed through req.body must follow and registerSchema contains the set of rules username, email and password must follow. These can schemas can be passed into a validator, it includes a rich set of validators for common data types like strings, numbers, dates, arrays, and more, which can be chained together for complex rules (e.g., Joi.string().min(5).max(255).required().email()).
 -> Upon successful validation, Joi can return the sanitized data, stripping out unknown or unwanted fields based on the schema.
+
+=> Added Email Verification.
+
+-> Email verification ensures that a user owns the email address they provided and helps prevent fake account creation. This process is completed during the user registeration, a user's email is considered as verified if the user data in the db has isVerified : true otherwise user needs to verify the email. 
+-> Nodemailer is the most popular email sending library for Node.js. Sending an email using nodemailer involves 3 steps :
+1. Create a transport -> Configure your SMTP server or another supported transport method.
+2. Compose your message -> Define the sender, receipient, subject and content.
+3. Send the mail -> Call transporter.sendMail() with your message options.
+
+-> during the user registeration generate a random token , can be attached with user creation and hash this random token and store it in the db. And send the random raw token to the user thorough email, this raw token can be placed in /verify-email?token="${rawToken}" can be passed as the query.
+-> Again for the verification we hash the rawToken from the query and hash it, find the user with this hashToken from the db, if the user is in the db then verification is successfull, otherwise invalid or expired token error is shown. After the verification make isVerified to true and assign undefined to the verificationToken as undefined because we no longer need the token to verify the user, user verification is already completed.
+-> resendVerification : helps when the token sent through verify-email is expired or not reached the user to generate another token otherwise the user registeration will not complete, verify-email only sends token once if the user is not able to verify during that period the token gets expired to prevent this when the user clicks resend code/ resend token for verification we use this resendVerifivation controller, this controller takes the email and find the user and generates random token overwrites it with old token then sends the email by calling sendEmail. For the route /resend-verification we use the rate limiter and validate the email using the emailSchema then access is passed to the resend-verification.
