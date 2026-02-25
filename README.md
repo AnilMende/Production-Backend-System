@@ -91,5 +91,13 @@ The Primary use of Joi in Node.js is to define a clear set of rules (a Schema) t
 3. Send the mail -> Call transporter.sendMail() with your message options.
 
 -> during the user registeration generate a random token , can be attached with user creation and hash this random token and store it in the db. And send the random raw token to the user thorough email, this raw token can be placed in /verify-email?token="${rawToken}" can be passed as the query.
--> Again for the verification we hash the rawToken from the query and hash it, find the user with this hashToken from the db, if the user is in the db then verification is successfull, otherwise invalid or expired token error is shown. After the verification make isVerified to true and assign undefined to the verificationToken as undefined because we no longer need the token to verify the user, user verification is already completed.
+-> Again for the verification we hash the rawToken from the query and hash it, find the user with this hashToken from the db, if the user is in the db then verification is successfull, otherwise invalid or expired token error is shown. After the verification make isVerified to true and assign undefined to the
+verificationToken as undefined because we no longer need the token to verify the user, user verification is already completed.
 -> resendVerification : helps when the token sent through verify-email is expired or not reached the user to generate another token otherwise the user registeration will not complete, verify-email only sends token once if the user is not able to verify during that period the token gets expired to prevent this when the user clicks resend code/ resend token for verification we use this resendVerifivation controller, this controller takes the email and find the user and generates random token overwrites it with old token then sends the email by calling sendEmail. For the route /resend-verification we use the rate limiter and validate the email using the emailSchema then access is passed to the resend-verification.
+
+=> Roles and Admin APIS:
+In real systems some users are normal users, some users are admins, some users are restricted. We are using the role Middleware authorizeRoles for assigning the routes to users and admins based on the roles. 
+
+-> Controllers handled by the Admin : getAllUsers, deleteUserByAdmin, blockUser, unblockUser, for the verificaton of the admin we use the verifyAccessTokena and authroizeRoles by passing admin as the role to access the admin routes.
+
+-> Controllers handled by the user and admin : getUserProfile, updateUser, deleteUser, this routes does not require the middleware authorizeRoles because both admin and user can view their profile, update their profile and delete their account. Requires verifyAccessToken as middleware because it is a protected route.
