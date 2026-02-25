@@ -28,6 +28,13 @@ const userSchema = mongoose.Schema({
         type : Date
     },
 
+    resetToken : {
+        type : String
+    },
+    resetTokenExpires : {
+        type : Date
+    },
+
     refreshToken : {
         type : String
     },
@@ -35,6 +42,10 @@ const userSchema = mongoose.Schema({
         type : String,
         enum : ['user', 'admin'],
         default : 'user'
+    },
+    isBlocked : {
+        type : Boolean,
+        default : false
     }
 }, { timestamps : true});
 

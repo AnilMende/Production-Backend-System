@@ -1,5 +1,6 @@
 import express from 'express';
-import { handleLogin, handleLogout, handleRefresh, handleRegister } from '../controllers/authController.js';
+import {  forgotPassword, handleLogin, 
+    handleLogout, handleRefresh, handleRegister } from '../controllers/authController.js';
 
 import { verifyRefreshToken } from '../middleware/auth.middleware.js';
 import { authLimiter } from '../middleware/authLimiter.js';
@@ -9,8 +10,9 @@ import { registerSchema } from '../validations/registerSchema.js';
 import { loginSchema } from '../validations/loginSchema.js';
 import { emailSchema } from '../validations/emailSchema.js';
 
-import { verifyEmail } from '../controllers/verifyController.js';
+import { verifyEmail } from '../controllers/verifyEmailController.js';
 import { resendVerification } from '../controllers/resendVerification.js';
+import { resetPassword } from '../controllers/resetPassword.js';
 
 const authRouter = express.Router();
 
@@ -21,6 +23,11 @@ authRouter.get("/verify-email", verifyEmail);
 
 //resend-verification
 authRouter.post("/resend-verification", authLimiter, validate(emailSchema), resendVerification);
+
+//Forgot Passwor and Reset Password
+authRouter.post("/forgot-password",authLimiter, validate(emailSchema), forgotPassword)
+authRouter.put("/reset-password", resetPassword);
+
 
 //added authLimiter for the login so that it can prevent from brute force attacks.
 //for the belowe route-> RateLimiter + validation + controller :

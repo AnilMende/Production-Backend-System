@@ -31,7 +31,7 @@ export const verifyEmail = asyncHandler(async (req, res) => {
 
     //remove token fields because user is already verified
     user.verificationToken = undefined;
-    user.verificationTokenExpired = undefined;
+    user.verificationTokenExpires = undefined;
 
     //save the user
     await user.save();

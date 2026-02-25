@@ -37,7 +37,7 @@ export const updateUser = asyncHandler(async (req, res) => {
     //update only allowed fields
     //runValidators ensures Mongoose checks the rules like
     //unique : true or required : true
-    const updatedUser = await User.findByIdAndUpdate( userId,
+    const updatedUser = await User.findByIdAndUpdate(userId,
         { $set: { username, email } },
         { new: true, runValidators: true }).select("-password -refreshToken");
 
@@ -64,9 +64,9 @@ export const deleteUser = asyncHandler(async (req, res) => {
     //using findByIdAndDelete will return the deleted users document
     //if the user with id existed the deletedUser will contains the user's data
     //if the user with id didn't exist, deletedUser will be null
-    const deletedUser = await User.findByIdAndDelete( userId );
+    const deletedUser = await User.findByIdAndDelete(userId);
 
-    if(!deletedUser){
+    if (!deletedUser) {
         throw new ApiError(404, "User not found");
     }
 

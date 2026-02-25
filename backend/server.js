@@ -8,6 +8,7 @@ import connectDB from './lib/db.js';
 
 import authRouter from './routes/authRoutes.js';
 import userRouter from './routes/userRoutes.js';
+import adminRouter from './routes/adminRoutes.js';
 
 const PORT = process.env.PORT || 4000;
 
@@ -41,6 +42,8 @@ app.get("/", (req,res) => {
 app.use("/api/auth", authRouter);
 //user api end point
 app.use("/api/user", userRouter);
+//admin api end point
+app.use("/api/admin", adminRouter);
 
 //connect to MongoDB
 await connectDB();

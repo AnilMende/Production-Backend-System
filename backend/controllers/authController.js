@@ -120,6 +120,11 @@ export const handleLogin = asyncHandler(async (req, res) => {
         throw new ApiError(401, "Invalid credentials");
     }
 
+    //if the user is Blocked, then user can't login
+    if(user.isBlocked){
+        throw new ApiError(403, "Account is blocked");
+    }
+
     //if the user is not verified then verify the email
     if (!user.isVerified) {
         throw new ApiError(403, "Please verify your email before logging in");
@@ -228,5 +233,45 @@ export const handleLogout = asyncHandler(async (req, res) => {
             sameSite: "strict"
         })
         .json(new ApiResponse(200, {}, "Logged Out Successfully"));
+})
+
+//Password Reset
+export const forgotPassword = asyncHandler(async (req,res) => {
+    const { email } = req.body;
+
+    const user = await User.findOne({ email });
+
+    //Security : don't reveal user existence
+    if(!user){
+        return res.status(200).json(
+            new ApiResponse(200, {}, "If account exists, email sent")
+        )
+    }
+
+    //generate random Token 
+    const rawToken = crypto.randomBytes(32).toString("hex");
+    //hash the random token
+    const hashedToken = crypto.createHash("sha256").update(rawToken).digest("hex");
+
+    //store the hashedToken
+    user.resetToken = hashedToken;
+
+    user.resetTokenExpires = Date.now() + 10 * 60 * 1000;
+
+    await user.save({ validateBeforeSave : false });
+
+    //reset url 
+    const resetUrl = `${process.env.BASE_URL}/api/auth/reset-password?token=${rawToken}`;
+
+    //send Email
+    await sendEmail({
+        email : user.email,
+        subject : "Password Reset",
+        html : `<a href="${resetUrl}">Reset Password</a>`
+    })
+
+    return res.status(200).json(
+        new ApiResponse(200, {}, "Reset email sent")
+    );
 })
 
