@@ -8,18 +8,24 @@ import redisClient from "../utils/redisClient.js";
 //=> to get all the users
 export const getAllUsers = asyncHandler(async (req, res) => {
 
-    //check cache
-    const cachedUsers = await redisClient.get('users:all');
+    // Request → Check Redis
+    //     → If found → return
+    //     → If not → fetch DB → store in Redis → return
 
-    if(cachedUsers){
+    //1.check cache
+    const cacheData = await redisClient.get(`users:all`);
+
+    if (cacheData) {
         return res.status(200).json(
-            new ApiResponse(200, JSON.parse(cachedUsers), "Users from cache")
-        );
+            new ApiResponse(200, JSON.parse(cacheData), "Users from cache")
+        )
     }
 
+    //2.Fetch from DB
     const users = await User.find().select("-password -refreshToken -verificationToken -resetToken");
 
-    await redisClient.setEx("users:all", 60, JSON.stringify(users));
+    //3.Store in Cache with a 5-minute expiry
+    await redisClient.set(`users:all`, JSON.stringify(users), { EX: 300 });
 
     return res.status(200).json(
         new ApiResponse(200, users, "Users from DB")
@@ -57,6 +63,9 @@ export const deleteUserByAdmin = asyncHandler(async (req, res) => {
 
     //cache invalidation
     await redisClient.del(`user:${user._id}`);
+    //if you delete the user still the cached list contains the users
+    //so delete the user list
+    await redisClient.del(`users:all`);
 
     return res.status(200).json(
         new ApiResponse(200, {}, "User deleted by Admin")
@@ -86,6 +95,8 @@ export const blockUser = asyncHandler(async (req, res) => {
 
     //cache invalidation
     await redisClient.del(`user:${user._id}`);
+    //the blocked user past details still in the list so delete the list
+    await redisClient.del(`users:all`);
 
     return res.status(200).json(
         new ApiResponse(200, {}, "User Blocked")
@@ -103,6 +114,10 @@ export const unblockUser = asyncHandler(async (req, res) => {
     //unblock user by setting isBlocked to false
     user.isBlocked = false;
     await user.save();
+
+    //Cache invalidation
+    await redisClient.del(`user:${user._id}`);
+    await redisClient.del(`users:all`);
 
     return res.status(200).json(
         new ApiResponse(200, {}, "User unblocked")

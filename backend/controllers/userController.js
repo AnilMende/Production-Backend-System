@@ -11,10 +11,14 @@ export const getUserProfile = asyncHandler(async (req, res) => {
     //req.user._id comes from the verifyAccessToken middleware
     const userId = req.user._id;
 
+    // Request → Check Redis
+    //     → If found → return
+    //     → If not → fetch DB → store in Redis → return
+
     //1.check cache
     const cachedUser = await redisClient.get(`user:${userId}`);
 
-    if(cachedUser){
+    if (cachedUser) {
         return res.status(200).json(
             new ApiResponse(200, JSON.parse(cachedUser), "User fetched from cache")
         )
@@ -27,8 +31,8 @@ export const getUserProfile = asyncHandler(async (req, res) => {
         throw new ApiError(404, "User not found");
     }
 
-    //3. Store in cache (TTL=60sec)
-    await redisClient.setEx(`user:${userId}`, 60, JSON.stringify(user));
+    //3. Store in cache (TTL=300sec == 5min)
+    await redisClient.set(`user:${userId}`, JSON.stringify(user), { EX: 300 });
 
     return res
         .status(200)
@@ -60,7 +64,7 @@ export const updateUser = asyncHandler(async (req, res) => {
     }
 
     //cache invalidation
-    if(updatedUser){
+    if (updatedUser) {
         await redisClient.del(`user:${userId}`);
     }
 
@@ -85,7 +89,7 @@ export const deleteUser = asyncHandler(async (req, res) => {
     //if the user with id didn't exist, deletedUser will be null
 
     const user = await User.findById(userId);
-    if(!user){
+    if (!user) {
         throw new ApiError(404, "User not found");
     }
 
@@ -99,6 +103,7 @@ export const deleteUser = asyncHandler(async (req, res) => {
 
     //cache invalidation => remove user from redis cache
     await redisClient.del(`user:${userId}`);
+    await redisClient.del(`users:all`);
 
     //clear cookies 
     return res
