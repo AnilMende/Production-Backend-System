@@ -101,3 +101,16 @@ In real systems some users are normal users, some users are admins, some users a
 -> Controllers handled by the Admin : getAllUsers, deleteUserByAdmin, blockUser, unblockUser, for the verificaton of the admin we use the verifyAccessTokena and authroizeRoles by passing admin as the role to access the admin routes.
 
 -> Controllers handled by the user and admin : getUserProfile, updateUser, deleteUser, this routes does not require the middleware authorizeRoles because both admin and user can view their profile, update their profile and delete their account. Requires verifyAccessToken as middleware because it is a protected route.
+
+=> Redis <=
+-> is a temporary fast storage RAM, to avoid hitting MongoDB again and again. 
+
+-> Caching Logic:  If data exists in Redis, return it; otherwise, fetch it, store it in Redis with an expiry (TTL), and then return it.
+
+-> Data Handling: Since Redis stores strings, use JSON.stringify() for objects when saving and JSON.parse() when retrieving.
+
+-> Redis Client(npm install redis) : This is just a library (a set of JavaScript files) that allows your Node.js code to "talk" to a Redis server. It runs perfectly fine on any operating system, including Windows, because it is just standard Node.js code. Node.js app uses this library to send commands to the server.
+
+->Then the code connects to the Redis server provided by the cloud provider like Upstash. So the redis library which is called as redis client it is the bridge that lets your windows application talk to the Redis, no matter where that Redis server is actually sitting. 
+
+-> Cache invalidation : We invalidate cache to maintain data consistency, correctness, and security between Redis and the database.
