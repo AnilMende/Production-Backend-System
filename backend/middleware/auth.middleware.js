@@ -3,6 +3,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/AsyncHandler.js";
 
 import jwt from 'jsonwebtoken';
+import redisClient from "../utils/redisClient.js";
 
 //middleware to verify the jwt token 
 // if jwt.verify happens first, if attacker steals refresh token
@@ -24,9 +25,9 @@ export const verifyRefreshToken = asyncHandler(async (req, res, next) => {
         .digest("hex");
 
     //Check DB first , find the user with this refreshToken
-    const user = await User.findOne({  refreshToken: hashedToken });
+    const user = await User.findOne({ refreshToken: hashedToken });
 
-    if(!user){
+    if (!user) {
         throw new ApiError(401, "Invalid refresh token")
     }
 
@@ -56,7 +57,7 @@ export const verifyAccessToken = asyncHandler(async (req, res, next) => {
     //get token from the authorization header
     const authHeader = req.headers.authorization;
 
-    if(!authHeader || !authHeader.startsWith("Bearer ")){
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
         throw new ApiError(401, "Access token required");
     }
 
@@ -69,20 +70,37 @@ export const verifyAccessToken = asyncHandler(async (req, res, next) => {
 
     //verify the token which is accessToken
     try {
-        
-        const decoded = jwt.verify(token , process.env.ACCESS_TOKEN_SECRET);
 
-        const user = await User.findById(decoded.id).select("-password -refreshToken");
+        const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+        const userId = decoded.id;
 
-        if(!user){
-            throw new ApiError(401, "User not found");
+        //1.Try Redis first
+        let user = await redisClient.get(`user:${userId}`);
+
+        if (user) {
+            user = JSON.parse(user);
+        } else {
+            //2. Fall Back to user
+            user = await User.findById(userId).select("-password -refreshToken");
+
+            if (!user) {
+                throw new ApiError(401, "User not found");
+            }
+
+            //Store in Redis
+            await redisClient.set(`user:${userId}`, JSON.stringify(user), { EX : 300 });
+
+        }
+
+        //Block check
+        if(user.isBlocked){
+            throw new ApiError(403, "Account is Blocked");
         }
 
         req.user = user;
-
         next();
 
-    } catch {
-        throw new ApiError(401, "Invalid or expired access token");
+    } catch(error) {
+        throw new ApiError(401, error.message ||  "Invalid or expired access token");
     }
 })

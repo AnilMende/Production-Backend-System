@@ -1,7 +1,7 @@
 import express from 'express';
 import { verifyAccessToken } from '../middleware/auth.middleware.js';
 import { authorizeRoles } from '../middleware/roleMiddleware.js';
-import { blockUser, deleteUserByAdmin, getAllUsers, unblockUser } from '../controllers/userController.js';
+import { blockUser, deleteUserByAdmin, getAllUsers, unblockUser } from '../controllers/adminController.js';
 
 const adminRouter = express.Router();
 

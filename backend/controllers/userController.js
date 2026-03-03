@@ -2,6 +2,7 @@ import User from "../models/user.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/AsyncHandler.js";
+import redisClient from "../utils/redisClient.js";
 
 //To get the user details
 export const getUserProfile = asyncHandler(async (req, res) => {
@@ -10,16 +11,29 @@ export const getUserProfile = asyncHandler(async (req, res) => {
     //req.user._id comes from the verifyAccessToken middleware
     const userId = req.user._id;
 
+    //1.check cache
+    const cachedUser = await redisClient.get(`user:${userId}`);
+
+    if(cachedUser){
+        return res.status(200).json(
+            new ApiResponse(200, JSON.parse(cachedUser), "User fetched from cache")
+        )
+    }
+
+    //2. If data not in Redis then Fetch from DB
     const user = await User.findById(userId).select("-password -refreshToken");
 
     if (!user) {
         throw new ApiError(404, "User not found");
     }
 
+    //3. Store in cache (TTL=60sec)
+    await redisClient.setEx(`user:${userId}`, 60, JSON.stringify(user));
+
     return res
         .status(200)
         .json(
-            new ApiResponse(200, user, "User Details")
+            new ApiResponse(200, user, "User fetched from DB")
         )
 })
 
@@ -45,6 +59,11 @@ export const updateUser = asyncHandler(async (req, res) => {
         throw new ApiError(404, "User not found");
     }
 
+    //cache invalidation
+    if(updatedUser){
+        await redisClient.del(`user:${userId}`);
+    }
+
     return res
         .status(200)
         .json(
@@ -64,11 +83,22 @@ export const deleteUser = asyncHandler(async (req, res) => {
     //using findByIdAndDelete will return the deleted users document
     //if the user with id existed the deletedUser will contains the user's data
     //if the user with id didn't exist, deletedUser will be null
+
+    const user = await User.findById(userId);
+    if(!user){
+        throw new ApiError(404, "User not found");
+    }
+
+    user.refreshToken = undefined;
+
     const deletedUser = await User.findByIdAndDelete(userId);
 
     if (!deletedUser) {
         throw new ApiError(404, "User not found");
     }
+
+    //cache invalidation => remove user from redis cache
+    await redisClient.del(`user:${userId}`);
 
     //clear cookies 
     return res

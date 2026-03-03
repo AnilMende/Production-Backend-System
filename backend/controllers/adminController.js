@@ -2,15 +2,27 @@ import User from "../models/user.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/AsyncHandler.js";
+import redisClient from "../utils/redisClient.js";
 
 //Controllers Handled By the Admin
 //=> to get all the users
 export const getAllUsers = asyncHandler(async (req, res) => {
 
+    //check cache
+    const cachedUsers = await redisClient.get('users:all');
+
+    if(cachedUsers){
+        return res.status(200).json(
+            new ApiResponse(200, JSON.parse(cachedUsers), "Users from cache")
+        );
+    }
+
     const users = await User.find().select("-password -refreshToken -verificationToken -resetToken");
 
+    await redisClient.setEx("users:all", 60, JSON.stringify(users));
+
     return res.status(200).json(
-        new ApiResponse(200, users, "All users fetched")
+        new ApiResponse(200, users, "Users from DB")
     )
 })
 
@@ -41,6 +53,11 @@ export const deleteUserByAdmin = asyncHandler(async (req, res) => {
         throw new ApiError(403, "Cannot delete another admin");
     }
 
+    await user.deleteOne();
+
+    //cache invalidation
+    await redisClient.del(`user:${user._id}`);
+
     return res.status(200).json(
         new ApiResponse(200, {}, "User deleted by Admin")
     )
@@ -62,7 +79,13 @@ export const blockUser = asyncHandler(async (req, res) => {
 
     //make isBlocked to true if user exists and not blocked
     user.isBlocked = true;
+
+    user.refreshToken = undefined;
+
     await user.save();
+
+    //cache invalidation
+    await redisClient.del(`user:${user._id}`);
 
     return res.status(200).json(
         new ApiResponse(200, {}, "User Blocked")
