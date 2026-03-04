@@ -63,9 +63,10 @@ export const updateUser = asyncHandler(async (req, res) => {
         throw new ApiError(404, "User not found");
     }
 
-    //cache invalidation
+    //cache invalidation, if the user got updated then the cache should be cleared
     if (updatedUser) {
         await redisClient.del(`user:${userId}`);
+        await redisClient.del("users:all");
     }
 
     return res
@@ -102,6 +103,7 @@ export const deleteUser = asyncHandler(async (req, res) => {
     }
 
     //cache invalidation => remove user from redis cache
+    //clear the user list as well as the user
     await redisClient.del(`user:${userId}`);
     await redisClient.del(`users:all`);
 
