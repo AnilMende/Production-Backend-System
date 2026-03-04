@@ -114,3 +114,7 @@ In real systems some users are normal users, some users are admins, some users a
 ->Then the code connects to the Redis server provided by the cloud provider like Upstash. So the redis library which is called as redis client it is the bridge that lets your windows application talk to the Redis, no matter where that Redis server is actually sitting. 
 
 -> Cache invalidation : We invalidate cache to maintain data consistency, correctness, and security between Redis and the database.
+
+-> servername (SNI): Upstash uses shared infrastructure where multiple databases reside on one IP. Without the servername, the TLS handshake may fail to identify which database you're targeting, causing a timeout. 
+
+-> connectTimeout: 10000: The default 5-second window is often too short for a full TCP + TLS handshake when connecting to a remote serverless provider like Upstash.
