@@ -1,6 +1,8 @@
 import express from 'express';
 import { verifyAccessToken } from '../middleware/auth.middleware.js';
 import { deleteUser,  getUserProfile, updateUser } from '../controllers/userController.js';
+import { upload } from '../middleware/upload.Middleware.js';
+import { uploadProfileImage } from '../controllers/uploadProfileImage.js';
 
 const userRouter = express.Router();
 
@@ -19,5 +21,8 @@ userRouter.get("/profile", verifyAccessToken, getUserProfile);
 userRouter.put("/update/:id", verifyAccessToken, updateUser);
 //delete user
 userRouter.delete("/remove/:id", verifyAccessToken, deleteUser);
+
+//upload-profile image
+userRouter.post("/upload-profile", verifyAccessToken, upload.single("image"), uploadProfileImage);
 
 export default userRouter;
