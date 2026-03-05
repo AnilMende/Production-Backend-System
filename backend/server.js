@@ -15,6 +15,7 @@ import adminRouter from './routes/adminRoutes.js';
 
 import logger from './utils/logger.js';
 import { errorMiddleware } from './middleware/errorMiddleware.js';
+import { timeStamp } from 'console';
 
 const PORT = process.env.PORT || 4000;
 
@@ -46,9 +47,6 @@ app.use(helmet());
 app.use(cookieParser());
 
 //routes 
-app.get("/", (req,res) => {
-    res.send("Server is Live");
-})
 
 //auth api end point
 app.use("/api/v1/auth", authRouter);
@@ -59,6 +57,11 @@ app.use("/api/admin", adminRouter);
 
 //connect to MongoDB
 await connectDB();
+
+//Root Route
+app.get("/", (req,res) => {
+    res.send("Production Backend System API running");
+});
 
 app.listen(PORT, () => { 
     logger.info(`Server started at ${PORT}`)
