@@ -1,0 +1,1 @@
+{"level":"error","message":"Invalid credentials","method":"POST","stack":"Error: Invalid credentials\n    at file:///C:/Users/anilm/production%20backend%20system/backend/controllers/authController.js:137:15","timestamp":"2026-03-05T18:53:01.045Z","url":"/api/auth/login"}

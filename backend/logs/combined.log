@@ -1,0 +1,7 @@
+{"level":"info","message":"Server started at 4000","timestamp":"2026-03-05T18:33:44.729Z"}
+{"level":"info","message":"Server started at 4000","timestamp":"2026-03-05T18:45:30.008Z"}
+{"level":"info","message":"Server started at 4000","timestamp":"2026-03-05T18:50:13.422Z"}
+{"level":"info","message":"Server started at 4000","timestamp":"2026-03-05T18:52:37.224Z"}
+{"level":"error","message":"Invalid credentials","method":"POST","stack":"Error: Invalid credentials\n    at file:///C:/Users/anilm/production%20backend%20system/backend/controllers/authController.js:137:15","timestamp":"2026-03-05T18:53:01.045Z","url":"/api/auth/login"}
+{"level":"info","message":"Server started at 4000","timestamp":"2026-03-05T19:11:37.568Z"}
+{"level":"info","message":"Server started at 4000","timestamp":"2026-03-05T19:12:57.352Z"}

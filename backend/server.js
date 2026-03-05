@@ -3,6 +3,9 @@ import 'dotenv/config';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
+import morgan from "morgan";
+import fs from "fs";
+import path from "path";
 
 import connectDB from './lib/db.js';
 
@@ -10,9 +13,18 @@ import authRouter from './routes/authRoutes.js';
 import userRouter from './routes/userRoutes.js';
 import adminRouter from './routes/adminRoutes.js';
 
+import logger from './utils/logger.js';
+import { errorMiddleware } from './middleware/errorMiddleware.js';
+
 const PORT = process.env.PORT || 4000;
 
 const app = express();
+
+const accessLogStream = fs.createWriteStream(
+    path.join("logs", "access.log"),
+    {flags : "a"}
+)
+app.use(morgan("combined", { stream : accessLogStream }));
 
 //middleware
 app.use(express.json());
@@ -39,13 +51,17 @@ app.get("/", (req,res) => {
 })
 
 //auth api end point
-app.use("/api/auth", authRouter);
+app.use("/api/v1/auth", authRouter);
 //user api end point
-app.use("/api/user", userRouter);
+app.use("/api/v1/user", userRouter);
 //admin api end point
 app.use("/api/admin", adminRouter);
 
 //connect to MongoDB
 await connectDB();
 
-app.listen(PORT, () => console.log(`Server Started at PORT ${PORT}`));
+app.listen(PORT, () => { 
+    logger.info(`Server started at ${PORT}`)
+});
+
+app.use(errorMiddleware);
