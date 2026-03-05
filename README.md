@@ -1,3 +1,5 @@
+## Project Overview:
+
 -> Libraries Installed : express, nodemon, jsonwebtoken, cors, bcrypt, mongoose, dotenv, validator.
 -> Global Error Handler : ApiError extends Error class acts as the global error wrapper
 -> ApiResponse : A standardized API response wrapper class is used in backend projects, to make every API response follow the same structure.
@@ -148,3 +150,53 @@ Attachment: It attaches this buffer to the request object as req.file.buffer
 6. Callback Execution (Database Storage) : Now that the cloud upload is finished, callback function finally executes. uploadResult: This object now contains the new HTTPS link (secure_url). DB Update : User.findByIdAndUpdate saves that permanent HTTPS link into your MongoDB user document. Cache Cleanup: redisClient.del removes old profile data from your cache so users see the new image immediately.
 
 7. Response (Server to client) : Server sends a 200 OK JSON response back to the user, containing the updated user data and the new image URL.
+
+==> Production Backend System :
+A production-ready backend architecture built with Node.js, Express, MongoDB and Redis.
+
+## Features
+
+Authentication
+- JWT access token
+- Refresh token rotation
+- Email verification
+- Password reset
+
+Security
+- Rate limiting
+- Helmet
+- XSS protection
+- Mongo sanitize
+- Input validation with Joi
+
+Caching
+- Redis user cache
+- Redis admin cache
+- Cache invalidation
+
+File Upload
+- Multer
+- Cloudinary integration
+
+Logging
+- Morgan request logging
+- Custom server logs
+
+Deployment
+- Render
+
+## Tech Stack :
+-> Node.js , MongoDB, Express.js, Redis 
+
+## API End Points :
+- /api/v1/auth/register
+- /api/v1/auth/login
+- /api/v1/auth/logut
+- /api/v1/user/profile
+- /api/v1/user/update/:id
+- /api/v1/user/block
+- /api/v1/user/unblock
+- /api/admin/update
+- /api/admin/block
+
+
