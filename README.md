@@ -1,192 +1,80 @@
-## Project Overview:
+# ⚙️ Scalable Backend API System
 
--> Libraries Installed : express, nodemon, jsonwebtoken, cors, bcrypt, mongoose, dotenv, validator.
--> Global Error Handler : ApiError extends Error class acts as the global error wrapper
--> ApiResponse : A standardized API response wrapper class is used in backend projects, to make every API response follow the same structure.
--> AsyncHandler : This is a utility wrapper for Express.js async controllers, To avoid the repeated try/catch inside the route we use the wrapper.
-Express doesn't handle async errors by default so by wrapping the async controller inside the asyncHandler will helps to identify the errors. Without this wrapper if we forget try/catch server crashes,
-inconsitent error handling, repetitive code, with this wrapper all async error go to one place.
--> asyncHandler is a safety net around every controller.
+A production-grade backend system built using Node.js and Express.js, designed with a focus on scalability, security, and clean architecture. This project demonstrates real-world backend engineering practices including authentication, caching, API security, and modular system design.
 
--> Added functions to generate accessToken and refreshToken. AccessToken Short lived, used for API authorization.
-Authentication must answer one question where does the tokens stored so that attacker cannot access them, browser stores the cookies.
-RefreshToken : Long Lived, Used only to get new access Token. Both must be protected , if access token lekas short damage, If refresh token leaks permanent access goes to the attacker.
-By storing them in the cookies protects both of them. cookies are htttpOnly : true means the cookie is automatically sent with every relevant HTTP request to the server by the browser.
-The server can read and modify the cookies via http headers, but the client script cannot.
+---
 
--> we have to hash the refreshToken before storing it in the database, Because a refreshToken is a long term session key. If someone steals the actual refreshToken they can generate new access token, and refresh token and stay logged in.So we protect in the same way we protect password, we store the hash of the refreshToken in database. By this the hash is not usuable as a refresh token, because to refresh a session
-server expects a real refresh token not hashed refresh token. So attacker with only the hash cannot use it which cannot generate real token.
+## 📌 Overview
 
--> handleRegister , handleLogin are the controllers for the register and login.
+This project is a fully-featured backend system that supports user authentication, secure API access, and high-performance data handling. It is structured to simulate how modern backend systems are built and scaled in production environments.
 
+---
 
-==> Refresh Token Endpoint : 
-Read refresh token from cookie,
-Hash the refresh token,
-compare the Hashed refresh token with the refresh token in Database,
-Verify JWT,
-Generate new Access and Refresh Tokens,
-Replace Old Refresh Token.
--> verifyRefreshToken is the middleware to verify the jwt token , if jwt.verify happens first, if attacker steals refresh token it will pass jwt.verify() until it expires
--> JWT only proves token was signed with the secret key, DB proves token is still valid session
--> handleRefresh is the controller to generate new Access and Refresh Tokens.
+## 🚀 Core Features
 
+* 🔐 JWT-based Authentication (Access & Refresh Tokens)
+* 🔄 Token Rotation & Secure Token Storage
+* 📧 Email Verification & Password Reset Flow
+* ⚡ Redis Caching with Cache Invalidation Strategy
+* 🛡️ API Security (Rate Limiting, Helmet, CORS)
+* ✅ Input Validation & Sanitization (Joi)
+* 🧱 Modular MVC Architecture
+* 📦 Scalable Code Structure for large applications
 
-==>Logut Endpoint: 
-read refresh token from cookie,
-Hash the refresh token,
-Find user with matching hash,
-if found clear the refresh token from database,
-otherwise clear cookie any way using clearCookie("refreshToken'),
-Logut always succeds even if token is expired or tampered.
+---
 
--> Frontend may call logout when token already expired, cookie corrupted, user manually logout.
+## 🧱 Architecture Design
 
--> AccessToken middleware is a standard security practice for protecting routes. It intercepts incoming requests, validates the token and allows the request to proceed only if the token is valid.
--> From the frontend AccessToken is stored in the Authrization header that is Authorization : Bearer <AccessToken>, client includes the AccessToken in the header of subsequent API requests.
--> Used wth REST APis, to access resources such as userData, documents and services, for verification of the accessToken get the token from Authorization header, and split the Bearer and AccessToken by using space between them, and verify this token using the jwt, and store the user in the request to use in other controllers.
-->The user controller functions are getUserProfile(get), updateUser(PUT), deleteUser(delete). The user can be passed from the verifyAccessToken middleware.
-Use findByIdAndDelete to remove the document, which requires only one round trip to database, Every time you use await your server hash to wait for a response from the database.
+The system follows a **modular MVC architecture**:
 
+* **Controllers** → Handle incoming requests and responses
+* **Services Layer** → Contains business logic and reusable functions
+* **Models** → Database schemas (MongoDB)
+* **Middleware** → Authentication, validation, error handling
 
-==> Rate Limiting : is the process of limiting the number of requests client can make in a given period of time. At first I have implemented a Custom limiter which is Fixed window rate limitng algorithm. 
+This separation improves:
 
--> And this custome rate limiter also has problems because, it is memory based storage, loginAttempts lives in the memory, if server restarts limiter resets, if there are multiple servers limiter useless. Attackers can bypass limit by restarting connection, hitting different server instances. This is IP based only so weak protection because Many users share same IP address like colleges or hostels. With Proxies and VPN's easily bypassed. No deleting of old IP addresses, server memory increases and slows down. If the multiple requests hit simulataneously incrementing the count may not be accurate.
+* Maintainability
+* Scalability
+* Code readability
 
-==> express-rate-limit:
+---
 
-=> We can minimize the above problems by using express-rate-limit, helps to think of it as a gatekeeper sitting in the middle of your request pipeline. It doesn't just look at the total traffic; it tracks individual "buckets" for every user.
--> Here is the step-by-step internal process for every incoming request:
-1. Identifying the Client (Key Generation)
-When a request hits your server, the middleware first needs to know who is calling.
-By default, it uses the IP address (req.ip).
-If you are behind a proxy (like Nginx, Heroku, or Cloudflare), you must ensure app.set('trust proxy', 1) is enabled in Express, otherwise, the limiter will see the proxy's IP for every user and block everyone at once.
+## 🔐 Authentication Flow
 
-2. Checking the "Store"
-The middleware looks into its Store (by default, this is just an object in the server's RAM) to see if this IP has a record.
-If no record exists: It creates a new entry for that IP, sets the "hits" to 1, and records the "reset time" (current time + 60 seconds).
-If a record exists: It increments the hit count by 1.
+* User logs in → receives Access Token + Refresh Token
+* Access Token used for protected API calls
+* Refresh Token used to generate new Access Tokens
+* Token rotation ensures enhanced security
+* Tokens are securely stored and validated
 
-3. The Validation Logic
-The middleware compares the current hit count against your max value (5):
-Scenario A: Count <= 5
-The middleware calls next(). The request proceeds to your login controller.
-Scenario B: Count > 5
-The middleware stops the request. It does not call next(). Instead, it immediately sends the 429 Too Many Requests status code along with your custom JSON message.
+---
 
-4. Updating Headers
-If standardHeaders is set to true, the middleware calculates the following values and attaches them to the response headers of every request (even the blocked ones):
-Header	              Description
-RateLimit-Limit	      The total limit (5).
-RateLimit-Remaining	  How many tries the user has left in this minute.
-RateLimit-Reset	      The Unix timestamp when the counter resets to zero.
+## ⚡ Caching Strategy (Redis)
 
+* Frequently accessed data is cached using Redis
+* Cache invalidation applied on data updates
+* Reduces database load and improves response time
 
-==> Added Validation For login and register user.
+---
 
-->Joi is a data validator library use in Node.js, to ensure data integrity and validate incoming data such as user input, API requests and configuration files.
-The Primary use of Joi in Node.js is to define a clear set of rules (a Schema) that incoming data must follow before it is processed by the application or stored in a database. This helps prevent bad data from causing errors or creating security vulnerabilities.
--> loginSchema involves the set of rules email and password data passed through req.body must follow and registerSchema contains the set of rules username, email and password must follow. These can schemas can be passed into a validator, it includes a rich set of validators for common data types like strings, numbers, dates, arrays, and more, which can be chained together for complex rules (e.g., Joi.string().min(5).max(255).required().email()).
--> Upon successful validation, Joi can return the sanitized data, stripping out unknown or unwanted fields based on the schema.
+## 🛡️ Security Practices
 
+* Rate limiting to prevent abuse
+* Helmet for securing HTTP headers
+* CORS configuration for controlled access
+* Input validation using Joi
+* Password hashing using bcrypt
 
-==> Added Email Verification.
+---
 
--> Email verification ensures that a user owns the email address they provided and helps prevent fake account creation. This process is completed during the user registeration, a user's email is considered as verified if the user data in the db has isVerified : true otherwise user needs to verify the email. 
--> Nodemailer is the most popular email sending library for Node.js. Sending an email using nodemailer involves 3 steps :
-1. Create a transport -> Configure your SMTP server or another supported transport method.
-2. Compose your message -> Define the sender, receipient, subject and content.
-3. Send the mail -> Call transporter.sendMail() with your message options.
+## 🔄 API Design
 
--> during the user registeration generate a random token , can be attached with user creation and hash this random token and store it in the db. And send the random raw token to the user thorough email, this raw token can be placed in /verify-email?token="${rawToken}" can be passed as the query.
--> Again for the verification we hash the rawToken from the query and hash it, find the user with this hashToken from the db, if the user is in the db then verification is successfull, otherwise invalid or expired token error is shown. After the verification make isVerified to true and assign undefined to the
-verificationToken as undefined because we no longer need the token to verify the user, user verification is already completed.
--> resendVerification : helps when the token sent through verify-email is expired or not reached the user to generate another token otherwise the user registeration will not complete, verify-email only sends token once if the user is not able to verify during that period the token gets expired to prevent this when the user clicks resend code/ resend token for verification we use this resendVerifivation controller, this controller takes the email and find the user and generates random token overwrites it with old token then sends the email by calling sendEmail. For the route /resend-verification we use the rate limiter and validate the email using the emailSchema then access is passed to the resend-verification.
+* Built RESTful APIs with proper standards
+* Structured request & response handling
+* Centralized error handling middleware
 
-
-==> Roles and Admin APIS:
-
-In real systems some users are normal users, some users are admins, some users are restricted. We are using the role Middleware authorizeRoles for assigning the routes to users and admins based on the roles. 
-
--> Controllers handled by the Admin : getAllUsers, deleteUserByAdmin, blockUser, unblockUser, for the verificaton of the admin we use the verifyAccessTokena and authroizeRoles by passing admin as the role to access the admin routes.
-
--> Controllers handled by the user and admin : getUserProfile, updateUser, deleteUser, this routes does not require the middleware authorizeRoles because both admin and user can view their profile, update their profile and delete their account. Requires verifyAccessToken as middleware because it is a protected route.
-
-
-==> Redis 
-
--> is a temporary fast storage RAM, to avoid hitting MongoDB again and again. 
-
--> Caching Logic:  If data exists in Redis, return it; otherwise, fetch it, store it in Redis with an expiry (TTL), and then return it.
-
--> Data Handling: Since Redis stores strings, use JSON.stringify() for objects when saving and JSON.parse() when retrieving.
-
--> Redis Client(npm install redis) : This is just a library (a set of JavaScript files) that allows your Node.js code to "talk" to a Redis server. It runs perfectly fine on any operating system, including Windows, because it is just standard Node.js code. Node.js app uses this library to send commands to the server.
-
-->Then the code connects to the Redis server provided by the cloud provider like Upstash. So the redis library which is called as redis client it is the bridge that lets your windows application talk to the Redis, no matter where that Redis server is actually sitting. 
-
--> Cache invalidation : We invalidate cache to maintain data consistency, correctness, and security between Redis and the database.
-
--> servername (SNI): Upstash uses shared infrastructure where multiple databases reside on one IP. Without the servername, the TLS handshake may fail to identify which database you're targeting, causing a timeout. 
-
--> connectTimeout: 10000: The default 5-second window is often too short for a full TCP + TLS handshake when connecting to a remote serverless provider like Upstash.
-
-
-==> File Upload with Multer + Cloudinary:
-
-1. The Request (Client Side) : The user selects a file and clicks "Upload." Their browser packages the image into a multipart/form-data POST request and sends it to your server.
-
-2. Multer memoryStorage (Server Side) : 
-Before reaching your uploadProfileImage function, the request passes through Multer middleware: Multer intercepts the incoming stream of data.
-Buffer Creation : Instead of writing to a disk, it collects all the raw binary chunks and holds them in your server's RAM as a Buffer.
-Attachment: It attaches this buffer to the request object as req.file.buffer
-  
- 3. Initializing Cloudinary upload_stream : cloudinary.uploader.upload_stream this creates a "Writable Stream" (a specialized data pipe) connected to Cloudinary’s servers, pass options like { folder: "profile_images" } so Cloudinary knows where to put the file. (Waiting Callback) define a callback function that will only run after Cloudinary finishes processing the data you are about to send.
-
-4. The Trigger: .end(req.file.buffer) : This is the step for the data transfer, Calling .end() with the buffer "pours" the raw binary data into the Cloudinary pipe.  Node.js flushes those bytes over an encrypted HTTPS connection to Cloudinary’s API. The .end() call also tells the pipe "I'm done sending data; you can close now".
-
-5. Cloudinary Processing & URL Generation : Once the cloudinary receives the binary data, It permanently stores the image in its global cloud infrastructure. It analyzes the bytes to determine the file type (JPEG, PNG, etc.) and dimensions. : It generates a unique HTTPS link (the secure_url) representing that specific file.
-
-6. Callback Execution (Database Storage) : Now that the cloud upload is finished, callback function finally executes. uploadResult: This object now contains the new HTTPS link (secure_url). DB Update : User.findByIdAndUpdate saves that permanent HTTPS link into your MongoDB user document. Cache Cleanup: redisClient.del removes old profile data from your cache so users see the new image immediately.
-
-7. Response (Server to client) : Server sends a 200 OK JSON response back to the user, containing the updated user data and the new image URL.
-
-==> Production Backend System :
-A production-ready backend architecture built with Node.js, Express, MongoDB and Redis.
-
-## Features
-
-Authentication
-- JWT access token
-- Refresh token rotation
-- Email verification
-- Password reset
-
-Security
-- Rate limiting
-- Helmet
-- XSS protection
-- Mongo sanitize
-- Input validation with Joi
-
-Caching
-- Redis user cache
-- Redis admin cache
-- Cache invalidation
-
-File Upload
-- Multer
-- Cloudinary integration
-
-Logging
-- Morgan request logging
-- Custom server logs
-
-Deployment
-- Render
-
-## Tech Stack :
--> Node.js , MongoDB, Express.js, Redis 
+---
 
 ## API End Points :
 - /api/v1/auth/register
@@ -199,4 +87,60 @@ Deployment
 - /api/admin/update
 - /api/admin/block
 
+---
+
+## 🗄️ Database Design
+
+* MongoDB used for flexible schema design
+* Optimized schema structure for scalability
+* Efficient query handling
+
+---
+
+## 🌍 Deployment
+
+* Backend deployed using Render
+* Environment-based configuration for different stages
+* Cloudinary integration for media storage
+
+---
+
+## 📊 Performance Focus
+
+* Reduced API response time using Redis caching
+* Optimized database queries
+* Modular design for easy scaling
+
+---
+
+## 📚 What I Learned
+
+* Designing scalable backend systems
+* Implementing secure authentication flows
+* Applying caching strategies for performance
+* Structuring production-ready applications
+* Handling real-world backend challenges
+
+---
+
+## 🔗 Links
+
+* 🌐 Live API: https://production-backend-system-3.onrender.com/
+* 📂 GitHub: https://github.com/AnilMende/Production-Backend-System
+
+---
+
+## ⚠️ Future Improvements
+
+* Add Docker containerization
+* Implement API documentation (Swagger/OpenAPI)
+* Introduce background jobs (queues)
+* Add unit and integration testing
+
+---
+
+## 👨‍💻 Author
+
+Anil Kumar Mende
+Backend-focused Software Engineer
 
